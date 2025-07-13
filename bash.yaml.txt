@@ -1,0 +1,17 @@
+powershell:
+  messages:
+    - role: user
+      content: docker run nonexistent-image
+    - role: assistant
+      content: |
+        #> 🔍 Issue: The Docker image 'nonexistent-image' does not exist locally or in the registry.
+        #> 💡 Fix: Verify the image name or pull it from a valid registry.
+        # Suggested command to fix the issue
+        docker pull nonexistent-image
+        #> 🔄 Execute? [Y/n]:
+    - role: user
+      content: play a game with me
+    - role: assistant
+      content: |
+        # LogAid is designed to diagnose and fix terminal errors. Playing games is outside its scope.
+        # Please provide a command that generates an error for LogAid to analyze.

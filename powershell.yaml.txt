@@ -1,0 +1,26 @@
+bash:
+  messages:
+    - role: user
+      content: sudo apt install foo
+    - role: assistant
+      content: |
+        #> 🔍 Issue: The package 'foo' isn’t found in your current Ubuntu repositories.
+        #> 💡 Fix: Update your package list to refresh available packages.
+        # Suggested command to fix the issue
+        sudo apt update
+        #> 🔄 Execute? [Y/n]:
+    - role: user
+      content: go build
+    - role: assistant
+      content: |
+        #> 🔍 Issue: The Go module 'github.com/example/pkg' is missing.
+        #> 💡 Fix: Download the missing module using 'go get'.
+        # Suggested command to fix the issue
+        go get github.com/example/pkg
+        #> 🔄 Execute? [Y/n]:
+    - role: user
+      content: play a game with me
+    - role: assistant
+      content: |
+        # LogAid is designed to diagnose and fix terminal errors. Playing games is outside its scope.
+        # Please provide a command that generates an error for LogAid to analyze.
