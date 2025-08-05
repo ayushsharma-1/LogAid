@@ -10,10 +10,10 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/ayush-1/logaid/internal/ai"
-	"github.com/ayush-1/logaid/internal/config"
-	"github.com/ayush-1/logaid/internal/logger"
-	"github.com/ayush-1/logaid/internal/plugins"
+	"github.com/ayushsharma-1/LogAid/internal/ai"
+	"github.com/ayushsharma-1/LogAid/internal/config"
+	"github.com/ayushsharma-1/LogAid/internal/logger"
+	"github.com/ayushsharma-1/LogAid/internal/plugins"
 )
 
 // Engine represents the core LogAid engine

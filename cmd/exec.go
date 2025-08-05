@@ -6,8 +6,8 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/ayush-1/logaid/internal/engine"
-	"github.com/ayush-1/logaid/internal/logger"
+	"github.com/ayushsharma-1/LogAid/internal/engine"
+	"github.com/ayushsharma-1/LogAid/internal/logger"
 	"github.com/spf13/cobra"
 )
 

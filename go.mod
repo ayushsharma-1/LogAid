@@ -1,4 +1,4 @@
-module github.com/ayush-1/logaid
+module github.com/ayushsharma-1/LogAid
 
 go 1.21
 

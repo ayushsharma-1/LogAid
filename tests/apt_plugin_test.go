@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ayush-1/logaid/internal/plugins"
+	"github.com/ayushsharma-1/LogAid/internal/plugins"
 )
 
 // TestAptPlugin tests the APT plugin with comprehensive test cases

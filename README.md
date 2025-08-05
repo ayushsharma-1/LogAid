@@ -18,10 +18,10 @@ LogAid is a CLI-first AI assistant that intercepts shell commands and error logs
 
 ```bash
 # Via Go (recommended)
-go install github.com/your-username/logaid@latest
+go install github.com/ayushsharma-1/LogAid@latest
 
 # Or download binary from releases
-curl -L https://github.com/your-username/logaid/releases/latest/download/logaid-linux-amd64 -o logaid
+curl -L https://github.com/ayushsharma-1/LogAid/releases/latest/download/logaid-linux-amd64 -o logaid
 chmod +x logaid
 sudo mv logaid /usr/local/bin/
 ```

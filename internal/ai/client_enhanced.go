@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ayush-1/logaid/internal/config"
-	"github.com/ayush-1/logaid/internal/logger"
+	"github.com/ayushsharma-1/LogAid/internal/config"
+	"github.com/ayushsharma-1/LogAid/internal/logger"
 )
 
 // AIClient represents the AI service client
