@@ -16,14 +16,53 @@ LogAid is a CLI-first AI assistant that intercepts shell commands and error logs
 
 ### Installation
 
+#### Quick Install (Recommended)
 ```bash
-# Via Go (recommended)
-go install github.com/ayushsharma-1/LogAid@latest
+# One-line installer for Linux/macOS
+curl -fsSL https://raw.githubusercontent.com/ayushsharma-1/LogAid/main/install.sh | bash
+```
 
-# Or download binary from releases
-curl -L https://github.com/ayushsharma-1/LogAid/releases/latest/download/logaid-linux-amd64 -o logaid
-chmod +x logaid
+#### Manual Installation
+
+**Via Go (for developers):**
+```bash
+go install github.com/ayushsharma-1/LogAid@latest
+```
+
+**Via Pre-built Binaries:**
+```bash
+# Linux AMD64
+curl -L https://github.com/ayushsharma-1/LogAid/releases/latest/download/logaid-linux-amd64.tar.gz | tar -xz
 sudo mv logaid /usr/local/bin/
+
+# macOS ARM64 (Apple Silicon)
+curl -L https://github.com/ayushsharma-1/LogAid/releases/latest/download/logaid-darwin-arm64.tar.gz | tar -xz
+sudo mv logaid /usr/local/bin/
+
+# Windows (PowerShell)
+Invoke-WebRequest -Uri "https://github.com/ayushsharma-1/LogAid/releases/latest/download/logaid-windows-amd64.zip" -OutFile "logaid.zip"
+Expand-Archive logaid.zip
+```
+
+**Via Docker:**
+```bash
+# Run directly
+docker run --rm -it ghcr.io/ayushsharma-1/logaid:latest --help
+
+# Interactive shell
+docker run --rm -it -v $(pwd):/workspace ghcr.io/ayushsharma-1/logaid:latest
+```
+
+**Via Package Managers (Coming Soon):**
+```bash
+# Homebrew (macOS/Linux)
+brew install ayushsharma-1/tap/logaid
+
+# Snap (Linux)
+sudo snap install logaid
+
+# Chocolatey (Windows)
+choco install logaid
 ```
 
 ### Usage
