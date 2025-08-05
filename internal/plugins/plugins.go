@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ayush-1/logaid/internal/config"
-	"github.com/ayush-1/logaid/internal/logger"
+	"github.com/ayushsharma-1/LogAid/internal/config"
+	"github.com/ayushsharma-1/LogAid/internal/logger"
 )
 
 // Plugin interface that all plugins must implement

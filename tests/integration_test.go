@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ayush-1/logaid/internal/config"
-	"github.com/ayush-1/logaid/internal/engine"
-	"github.com/ayush-1/logaid/internal/plugins"
+	"github.com/ayushsharma-1/LogAid/internal/config"
+	"github.com/ayushsharma-1/LogAid/internal/engine"
+	"github.com/ayushsharma-1/LogAid/internal/plugins"
 )
 
 // TestIntegrationRedisCliScenario tests the complete flow for rediscli typo

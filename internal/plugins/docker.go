@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ayush-1/logaid/internal/ai"
+	"github.com/ayushsharma-1/LogAid/internal/ai"
 )
 
 // DockerPlugin handles Docker command errors with AI-powered suggestions

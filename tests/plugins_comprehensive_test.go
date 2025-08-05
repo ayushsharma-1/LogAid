@@ -3,7 +3,7 @@ package tests
 import (
 	"testing"
 
-	"github.com/ayush-1/logaid/internal/plugins"
+	"github.com/ayushsharma-1/LogAid/internal/plugins"
 )
 
 // TestGitPlugin tests the Git plugin with comprehensive test cases
