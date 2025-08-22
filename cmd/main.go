@@ -35,7 +35,7 @@ func main() {
 }
 
 func showLogo() {
-	fmt.Println(`
+	fmt.Print(`
    _                _    _     _ 
   | |    ___   __ _| | _(_) __| |
   | |   / _ \ / _` + "`" + ` | |/ / |/ _` + "`" + ` |

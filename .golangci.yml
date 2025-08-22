@@ -1,0 +1,45 @@
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+
+linters:
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - typecheck
+    - unused
+    - gocritic
+    - gofmt
+    - goimports
+    - golint
+    - gosec
+    - misspell
+    - unconvert
+    - unparam
+    - whitespace
+
+linters-settings:
+  gocritic:
+    enabled-tags:
+      - performance
+      - style
+      - experimental
+  gosec:
+    excludes:
+      - G101 # Look for hardcoded credentials (we have test keys)
+  gofmt:
+    simplify: true
+
+issues:
+  exclude-use-default: false
+  exclude:
+    # Exclude some gosec rules for test files
+    - "G101: Potential hardcoded credentials"
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gosec
+        - errcheck
