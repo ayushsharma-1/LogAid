@@ -1,60 +1,60 @@
-# LogAid Testing Environment
-FROM ubuntu:22.04
+# Build stage
+FROM golang:1.21-alpine AS builder
 
-# Install common tools that LogAid helps with
-RUN apt-get update && apt-get install -y \
-    curl \
-    wget \
-    git \
-    vim \
-    nano \
-    htop \
-    tree \
-    zip \
-    unzip \
-    build-essential \
-    python3 \
-    python3-pip \
-    nodejs \
-    npm \
-    golang-go \
-    && rm -rf /var/lib/apt/lists/*
+# Install build dependencies
+RUN apk add --no-cache git ca-certificates tzdata
 
-# Install Docker (for testing Docker plugin)
-RUN curl -fsSL https://get.docker.com -o get-docker.sh && \
-    sh get-docker.sh && \
-    rm get-docker.sh
+# Set working directory
+WORKDIR /app
 
-# Install kubectl (for testing Kubernetes plugin)
-RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
-    install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl && \
-    rm kubectl
+# Copy go mod files
+COPY go.mod go.sum ./
 
-# Create a test user
-RUN useradd -m -s /bin/bash testuser && \
-    usermod -aG docker testuser
+# Download dependencies
+RUN go mod download
 
-# Copy LogAid binary (will be built separately)
-COPY logaid /usr/local/bin/logaid
+# Copy source code
+COPY . .
+
+# Build the binary
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o logaid .
+
+# Final stage
+FROM alpine:latest
+
+# Install runtime dependencies
+RUN apk add --no-cache \
+    bash \
+    zsh \
+    fish \
+    ca-certificates \
+    tzdata
+
+# Create non-root user
+RUN addgroup -g 1001 logaid && \
+    adduser -D -s /bin/bash -G logaid -u 1001 logaid
+
+# Set working directory
+WORKDIR /home/logaid
+
+# Copy binary from builder
+COPY --from=builder /app/logaid /usr/local/bin/logaid
+
+# Make binary executable
 RUN chmod +x /usr/local/bin/logaid
 
-# Set up test environment
-USER testuser
-WORKDIR /home/testuser
+# Switch to non-root user
+USER logaid
 
-# Create some test scenarios
-RUN echo '#!/bin/bash' > test-scenarios.sh && \
-    echo 'echo "Testing LogAid with various error scenarios..."' >> test-scenarios.sh && \
-    echo 'echo "1. Testing apt typo..."' >> test-scenarios.sh && \
-    echo 'apt instal curl' >> test-scenarios.sh && \
-    echo 'echo "2. Testing git typo..."' >> test-scenarios.sh && \
-    echo 'git checout main' >> test-scenarios.sh && \
-    echo 'echo "3. Testing npm typo..."' >> test-scenarios.sh && \
-    echo 'npm instal express' >> test-scenarios.sh && \
-    echo 'echo "4. Testing docker typo..."' >> test-scenarios.sh && \
-    echo 'docker rnu hello-world' >> test-scenarios.sh && \
-    echo 'echo "5. Testing kubectl typo..."' >> test-scenarios.sh && \
-    echo 'kubectl gt pods' >> test-scenarios.sh && \
-    chmod +x test-scenarios.sh
+# Set default shell
+ENV SHELL=/bin/bash
 
-CMD ["bash"]
+# Expose port for potential web interface (future feature)
+EXPOSE 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD logaid version || exit 1
+
+# Default command
+CMD ["logaid", "--help"]

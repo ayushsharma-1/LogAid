@@ -1,0 +1,148 @@
+name: Build and Release LogAid
+
+on:
+  push:
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+    
+    - name: Run tests
+      run: go test -v ./...
+    
+    - name: Build
+      run: go build -v ./...
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+    
+    - name: Build Linux AMD64
+      run: |
+        GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o logaid-linux-amd64 .
+    
+    - name: Build Linux ARM64
+      run: |
+        GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o logaid-linux-arm64 .
+    
+    - name: Build macOS AMD64
+      run: |
+        GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o logaid-macos-amd64 .
+    
+    - name: Build macOS ARM64
+      run: |
+        GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o logaid-macos-arm64 .
+    
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: LogAid ${{ github.ref }}
+        draft: false
+        prerelease: false
+        body: |
+          ## LogAid Flow-State Agent Release
+          
+          ### Features
+          - AI-powered CLI error detection and suggestions
+          - Support for Gemini and OpenAI APIs
+          - Non-intrusive, calm UX design
+          - Cross-platform compatibility
+          
+          ### Installation
+          
+          #### Linux
+          ```bash
+          # Download and install
+          wget https://github.com/ayushsharma-1/LogAid/releases/download/${{ github.ref }}/logaid-linux-amd64
+          chmod +x logaid-linux-amd64
+          sudo mv logaid-linux-amd64 /usr/local/bin/logaid
+          ```
+          
+          #### macOS
+          ```bash
+          # Download and install
+          wget https://github.com/ayushsharma-1/LogAid/releases/download/${{ github.ref }}/logaid-macos-amd64
+          chmod +x logaid-macos-amd64
+          sudo mv logaid-macos-amd64 /usr/local/bin/logaid
+          ```
+          
+          ### Configuration
+          Set your API key:
+          ```bash
+          export GEMINI_API_KEY=your-api-key
+          # or
+          export OPENAI_API_KEY=your-api-key
+          ```
+          
+          ### Usage
+          ```bash
+          # Test configuration
+          logaid test
+          
+          # Start the agent
+          logaid run
+          ```
+    
+    - name: Upload Linux AMD64
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.TOKEN_GITHUB }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./logaid-linux-amd64
+        asset_name: logaid-linux-amd64
+        asset_content_type: application/octet-stream
+    
+    - name: Upload Linux ARM64
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.TOKEN_GITHUB }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./logaid-linux-arm64
+        asset_name: logaid-linux-arm64
+        asset_content_type: application/octet-stream
+    
+    - name: Upload macOS AMD64
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.TOKEN_GITHUB}}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./logaid-macos-amd64
+        asset_name: logaid-macos-amd64
+        asset_content_type: application/octet-stream
+    
+    - name: Upload macOS ARM64
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.TOKEN_GITHUB }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./logaid-macos-arm64
+        asset_name: logaid-macos-arm64
+        asset_content_type: application/octet-stream

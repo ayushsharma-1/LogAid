@@ -1,31 +1,27 @@
-# Binaries
-logaid
+# Binaries for programs and plugins
 *.exe
 *.exe~
 *.dll
 *.so
 *.dylib
+logaid
+logaid-*
 
 # Test binary, built with `go test -c`
 *.test
 
-# Output of the go coverage tool
+# Output of the go coverage tool, specifically when used with LiteIDE
 *.out
-coverage.html
+
+# Dependency directories (remove the comment below to include it)
+# vendor/
 
 # Go workspace file
 go.work
 
-# Dependency directories
-vendor/
-
-# Build directories
+# Build directory
 build/
 dist/
-
-# Logs
-*.log
-logs/
 
 # IDE files
 .vscode/
@@ -34,24 +30,66 @@ logs/
 *.swo
 *~
 
-# OS files
-.DS_Store
-Thumbs.db
-
 # Environment files
-.env
 .env.local
+.env.development
+.env.test
 .env.production
 
-# Test coverage
-coverage.txt
-coverage.xml
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
 
-# Temporary files
+# Linux
+*~
+.directory
+.Trash-*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Logs
+*.log
+logs/
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# nyc test coverage
+.nyc_output
+
+# Temporary directories
 tmp/
 temp/
 
-# LogAid specific
-.logaid/
-plugins/
-history.json
+# Archives
+*.tar.gz
+*.tar.bz2
+*.zip
+*.rar
+
+# Package files
+*.deb
+*.rpm
+*.pkg
+*.dmg
+*.msi
+
+# AppImage
+*.AppImage
+
+# Flatpak
+*.flatpak
+
+# Snap
+*.snap
