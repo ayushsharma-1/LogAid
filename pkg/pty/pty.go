@@ -40,11 +40,11 @@ func NewWrapper(cfg *config.Config, log *logger.Logger, pluginManager *plugin.Ma
 	}
 }
 
-// Run starts the wrapped shell session
+// Run starts the wrapped shell session it is here because it graceful startup and shutdown
 func (w *Wrapper) Run(ctx context.Context) error {
 	w.logger.Info("Starting LogAid shell wrapper")
-	
-	// Set up signal handling
+
+	// Set up signal handling for control+c and termination signals
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
@@ -61,7 +61,7 @@ func (w *Wrapper) Run(ctx context.Context) error {
 			shellCancel()
 		}
 	}()
-
+		// delegates to run main logic
 	return w.runShellLoop(shellCtx)
 }
 
@@ -70,7 +70,7 @@ func (w *Wrapper) Start(ctx context.Context) error {
 	return w.Run(ctx)
 }
 
-// SetupSignalHandling sets up signal handling and returns the signal channel
+// SetupSignalHandling sets up signal handling and returns the signal channel creates and return a channel for OS signal notifications
 func (w *Wrapper) SetupSignalHandling() chan os.Signal {
 	if w.sigChan == nil {
 		w.sigChan = make(chan os.Signal, 1)
@@ -104,7 +104,7 @@ func (w *Wrapper) runShellLoop(ctx context.Context) error {
 		"PS1=[LogAid] "+os.Getenv("PS1"),
 		"PROMPT_COMMAND=echo \"__LOGAID_CMD__:$?:$(history 1)\" >&2; "+os.Getenv("PROMPT_COMMAND"),
 	)
-
+	// This is where we creates channles to communicate with the shell process and logAid
 	// Set up pipes
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
@@ -174,7 +174,7 @@ func (w *Wrapper) handleStdin(stdin io.Writer) {
 		fmt.Fprintln(stdin, line)
 	}
 }
-
+// It helps whetere user need help or not
 // processCommandInfo processes command information from the shell
 func (w *Wrapper) processCommandInfo(line string) {
 	// Parse: __LOGAID_CMD__:exitcode:command
@@ -231,6 +231,7 @@ func (w *Wrapper) handleFailedCommand(command, stderr string, exitCode int) {
 	var explanation string
 	var pluginName string
 	var processingTime time.Duration
+	var sanitizationResult *plugin.SanitizationResult
 
 	start := time.Now()
 	
@@ -238,23 +239,60 @@ func (w *Wrapper) handleFailedCommand(command, stderr string, exitCode int) {
 		pluginName = matchingPlugin.Name()
 		w.logger.Debug("Using plugin: %s for command: %s", pluginName, command)
 		
-		// Try plugin-specific suggestion first
-		if cmd, exp, err := matchingPlugin.Suggest(ctx, command, stderr, exitCode); err == nil && cmd != "" {
-			suggestion = cmd
-			explanation = exp
+		// Try secure plugin-specific suggestion first
+		if secureResult, cmd, exp, err := matchingPlugin.SuggestSecure(ctx, command, stderr, exitCode); err == nil {
+			sanitizationResult = secureResult
+			
+			// Check if we need user consent for security reasons
+			if sanitizationResult.UserConsentRequired {
+				if !w.requestSecurityConsent(command, sanitizationResult) {
+					w.logger.Info("User declined security consent for command: %s", command)
+					return
+				}
+			}
+			
+			if cmd != "" {
+				suggestion = cmd
+				explanation = exp
+			}
 		}
 	}
 
-	// If no plugin suggestion or plugin failed, try AI
+	// If no plugin suggestion or plugin failed, try AI with sanitization
 	if suggestion == "" && w.aiClient != nil {
 		w.logger.Debug("Requesting AI suggestion for command: %s", command)
 		
+		// If we don't have sanitization result yet, create one
+		if sanitizationResult == nil {
+			sanitizer := plugin.NewSecuritySanitizer()
+			sanitizationResult = sanitizer.SanitizeData(command, stderr, exitCode)
+		}
+		
+		// Check if it's safe to send to AI
+		if sanitizationResult.RiskLevel >= plugin.RiskHigh {
+			w.logger.Warn("Command contains sensitive data - skipping AI suggestion: %s", command)
+			w.presentSecurityWarning(command, sanitizationResult)
+			return
+		}
+		
+		// Request user consent if needed
+		if sanitizationResult.UserConsentRequired {
+			if !w.requestAIConsent(command, sanitizationResult) {
+				w.logger.Info("User declined AI sharing consent for command: %s", command)
+				return
+			}
+		}
+		
+		// Use sanitized data for AI request
+		sanitizedCmd := sanitizationResult.SanitizedCommand
+		sanitizedOutput := sanitizationResult.SanitizedOutput
+		
 		req := &plugin.SuggestionRequest{
-			Command:  command,
-			Output:   stderr,
+			Command:  sanitizedCmd,
+			Output:   sanitizedOutput,
 			ExitCode: exitCode,
 			Plugin:   pluginName,
-			Context:  "Linux terminal error",
+			Context:  "Linux terminal error (sanitized)",
 		}
 
 		if resp, err := w.aiClient.Suggest(ctx, req); err == nil && resp.SuggestedCommand != "" {
@@ -382,4 +420,90 @@ func (w *Wrapper) executeCommand(command string) error {
 	cmd.Stdin = os.Stdin
 	
 	return cmd.Run()
+}
+
+// requestSecurityConsent asks user for consent when security issues are detected
+func (w *Wrapper) requestSecurityConsent(command string, sanitizationResult *plugin.SanitizationResult) bool {
+	// Use colors if enabled
+	var (
+		warningColor = ""
+		promptColor  = ""
+		resetColor   = ""
+	)
+
+	if w.config.EnableColors {
+		warningColor = "\033[33m" // Yellow
+		promptColor = "\033[36m"  // Cyan
+		resetColor = "\033[0m"    // Reset
+	}
+
+	fmt.Printf("\n%s⚠️  SECURITY WARNING%s\n", warningColor, resetColor)
+	fmt.Printf("%s│%s Command contains potentially sensitive information\n", warningColor, resetColor)
+	fmt.Printf("%s│%s Risk Level: %s\n", warningColor, resetColor, sanitizationResult.RiskLevel.String())
+	
+	if len(sanitizationResult.DetectedPatterns) > 0 {
+		fmt.Printf("%s│%s Detected patterns: %v\n", warningColor, resetColor, sanitizationResult.DetectedPatterns)
+	}
+	
+	fmt.Printf("%s│%s Command: %s\n", warningColor, resetColor, command)
+	fmt.Printf("%s╰─%s\n", warningColor, resetColor)
+	
+	fmt.Printf("%sProceed with plugin suggestion? [y/N]:%s ", promptColor, resetColor)
+	
+	userChoice := w.readUserChoiceWithTimeout(w.config.PromptTimeout)
+	return strings.ToLower(strings.TrimSpace(userChoice)) == "y"
+}
+
+// requestAIConsent asks user for consent before sending data to AI
+func (w *Wrapper) requestAIConsent(command string, sanitizationResult *plugin.SanitizationResult) bool {
+	// Use colors if enabled
+	var (
+		infoColor   = ""
+		promptColor = ""
+		resetColor  = ""
+	)
+
+	if w.config.EnableColors {
+		infoColor = "\033[34m"   // Blue
+		promptColor = "\033[36m" // Cyan
+		resetColor = "\033[0m"   // Reset
+	}
+
+	fmt.Printf("\n%s🤖 AI CONSENT REQUEST%s\n", infoColor, resetColor)
+	fmt.Printf("%s│%s LogAid wants to send sanitized command data to AI for suggestions\n", infoColor, resetColor)
+	fmt.Printf("%s│%s Risk Level: %s\n", infoColor, resetColor, sanitizationResult.RiskLevel.String())
+	
+	if len(sanitizationResult.DetectedPatterns) > 0 {
+		fmt.Printf("%s│%s Sensitive data detected and will be redacted: %v\n", infoColor, resetColor, sanitizationResult.DetectedPatterns)
+	}
+	
+	fmt.Printf("%s│%s Original: %s\n", infoColor, resetColor, command)
+	fmt.Printf("%s│%s Sanitized: %s\n", infoColor, resetColor, sanitizationResult.SanitizedCommand)
+	fmt.Printf("%s╰─%s\n", infoColor, resetColor)
+	
+	fmt.Printf("%sSend sanitized data to AI? [y/N]:%s ", promptColor, resetColor)
+	
+	userChoice := w.readUserChoiceWithTimeout(w.config.PromptTimeout)
+	return strings.ToLower(strings.TrimSpace(userChoice)) == "y"
+}
+
+// presentSecurityWarning shows a security warning for high-risk commands
+func (w *Wrapper) presentSecurityWarning(command string, sanitizationResult *plugin.SanitizationResult) {
+	// Use colors if enabled
+	var (
+		errorColor = ""
+		resetColor = ""
+	)
+
+	if w.config.EnableColors {
+		errorColor = "\033[31m" // Red
+		resetColor = "\033[0m"  // Reset
+	}
+
+	fmt.Printf("\n%s🛑 SECURITY ALERT%s\n", errorColor, resetColor)
+	fmt.Printf("%s│%s Command contains sensitive information and cannot be sent to AI\n", errorColor, resetColor)
+	fmt.Printf("%s│%s Risk Level: %s\n", errorColor, resetColor, sanitizationResult.RiskLevel.String())
+	fmt.Printf("%s│%s Detected patterns: %v\n", errorColor, resetColor, sanitizationResult.DetectedPatterns)
+	fmt.Printf("%s│%s Please review and fix the command manually\n", errorColor, resetColor)
+	fmt.Printf("%s╰─%s\n", errorColor, resetColor)
 }

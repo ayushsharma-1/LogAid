@@ -19,6 +19,10 @@ type Plugin interface {
 	// Returns suggested command, explanation, and any error
 	Suggest(ctx context.Context, cmd string, output string, exitCode int) (string, string, error)
 	
+	// SuggestSecure generates a suggestion with security sanitization
+	// Returns sanitization result and suggestion if safe
+	SuggestSecure(ctx context.Context, cmd string, output string, exitCode int) (*SanitizationResult, string, string, error)
+	
 	// Priority returns the plugin priority (higher numbers = higher priority)
 	Priority() int
 	
@@ -94,6 +98,7 @@ type BasePlugin struct {
 	description string
 	priority    int
 	enabled     bool
+	sanitizer   *SecuritySanitizer
 }
 
 // NewBasePlugin creates a new base plugin
@@ -103,7 +108,38 @@ func NewBasePlugin(name, description string, priority int) *BasePlugin {
 		description: description,
 		priority:    priority,
 		enabled:     true,
+		sanitizer:   NewSecuritySanitizer(),
 	}
+}
+
+// SanitizeInput performs security sanitization on command and output
+func (p *BasePlugin) SanitizeInput(cmd, output string, exitCode int) *SanitizationResult {
+	return p.sanitizer.SanitizeData(cmd, output, exitCode)
+}
+
+// SuggestSecure provides a secure implementation that sanitizes input before processing
+func (p *BasePlugin) SuggestSecure(ctx context.Context, cmd string, output string, exitCode int) (*SanitizationResult, string, string, error) {
+	// First, sanitize the input
+	sanitizationResult := p.SanitizeInput(cmd, output, exitCode)
+	
+	// If data is not safe and user consent is required, return early
+	if !sanitizationResult.IsSafe && sanitizationResult.UserConsentRequired {
+		return sanitizationResult, "", "", nil
+	}
+	
+	// Use sanitized data for suggestion generation
+	suggestionCmd := cmd
+	suggestionOutput := output
+	
+	// If we have sanitized versions and risk level is medium or above, use them
+	if sanitizationResult.RiskLevel >= RiskMedium {
+		suggestionCmd = sanitizationResult.SanitizedCommand
+		suggestionOutput = sanitizationResult.SanitizedOutput
+	}
+	
+	// This would need to be implemented by each specific plugin
+	// For now, return empty suggestion - specific plugins will override this
+	return sanitizationResult, "", "Base plugin does not provide suggestions", nil
 }
 
 // Name returns the plugin name

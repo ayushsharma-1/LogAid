@@ -5,6 +5,38 @@ All notable changes to LogAid will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.2] - 2025-09-08
+
+### Added
+- 🔒 **Enhanced Security Sanitization System**
+  - Comprehensive sensitive data detection and redaction
+  - Advanced pattern matching for API keys, tokens, passwords, and SSH keys
+  - Risk level assessment (Low, Medium, High, Critical)
+  - User consent flows for sensitive data handling
+  - Sanitization integration across all plugins and PTY wrapper
+  - Support for environment variables, database URLs, and cloud credentials
+- 🔌 **Plugin Security Enhancements**
+  - `SuggestSecure` methods for all plugins (apt, docker, git, npm, kubernetes, generic)
+  - Individual plugin sanitization with context-aware patterns
+  - Security-first approach with automatic sensitive data detection
+- 🛡️ **AI Provider Security**
+  - Pre-flight security checks before sending data to AI services
+  - Configurable security consent prompts
+  - Sanitized data transmission to protect user privacy
+
+### Security
+- 15+ sensitive data patterns including:
+  - API keys and access tokens
+  - SSH private keys and certificates
+  - Database connection strings
+  - Cloud provider credentials (AWS, GCP, Azure)
+  - Authentication headers and bearer tokens
+  - Environment variables with sensitive names
+  - Password patterns and hashes
+- User consent requirements for high-risk data
+- Automatic data sanitization with placeholder replacement
+- Security logging and audit trails
+
 ## [1.0.0] - 2025-08-23
 
 ### Added
