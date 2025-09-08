@@ -95,6 +95,35 @@ func (p *GenericPlugin) Suggest(ctx context.Context, cmd string, output string, 
 	return "", "No specific suggestion available", nil
 }
 
+// SuggestSecure provides secure suggestion with sanitization for generic commands
+func (p *GenericPlugin) SuggestSecure(ctx context.Context, cmd string, output string, exitCode int) (*SanitizationResult, string, string, error) {
+	// First, perform security sanitization
+	sanitizationResult := p.SanitizeInput(cmd, output, exitCode)
+	
+	// Generic plugin is cautious - if there are any security concerns, require consent
+	if sanitizationResult.RiskLevel >= RiskMedium {
+		sanitizationResult.UserConsentRequired = true
+	}
+	
+	// If data is not safe and user consent is required, return early
+	if !sanitizationResult.IsSafe && sanitizationResult.UserConsentRequired {
+		return sanitizationResult, "", "Command requires manual review due to security concerns", nil
+	}
+	
+	// Use sanitized data for suggestion generation
+	suggestionCmd := cmd
+	suggestionOutput := output
+	
+	if sanitizationResult.RiskLevel >= RiskMedium {
+		suggestionCmd = sanitizationResult.SanitizedCommand
+		suggestionOutput = sanitizationResult.SanitizedOutput
+	}
+	
+	// Generate suggestion with sanitized data
+	suggestion, explanation, err := p.Suggest(ctx, suggestionCmd, suggestionOutput, exitCode)
+	return sanitizationResult, suggestion, explanation, err
+}
+
 // suggestCommandInstallation suggests how to install a missing command
 func (p *GenericPlugin) suggestCommandInstallation(commandName string) (string, string, error) {
 	// Common command installation suggestions

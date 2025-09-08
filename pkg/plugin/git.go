@@ -100,6 +100,55 @@ func (p *GitPlugin) Suggest(ctx context.Context, cmd string, output string, exit
 	return "", "No specific git suggestion available", nil
 }
 
+// SuggestSecure provides secure suggestion with sanitization for git commands
+func (p *GitPlugin) SuggestSecure(ctx context.Context, cmd string, output string, exitCode int) (*SanitizationResult, string, string, error) {
+	// First, perform security sanitization
+	sanitizationResult := p.SanitizeInput(cmd, output, exitCode)
+	
+	// Special handling for git commands with credentials
+	if p.containsCredentials(cmd) {
+		sanitizationResult.IsSafe = false
+		sanitizationResult.RiskLevel = RiskHigh
+		sanitizationResult.UserConsentRequired = true
+		sanitizationResult.DetectedPatterns = append(sanitizationResult.DetectedPatterns, "git_with_credentials")
+		return sanitizationResult, "", "Git command contains credentials - manual review required", nil
+	}
+	
+	// If data is not safe and user consent is required, return early
+	if !sanitizationResult.IsSafe && sanitizationResult.UserConsentRequired {
+		return sanitizationResult, "", "Git command requires manual review due to security concerns", nil
+	}
+	
+	// Use original logic for git-specific suggestions (they're generally safe)
+	suggestion, explanation, err := p.Suggest(ctx, cmd, output, exitCode)
+	return sanitizationResult, suggestion, explanation, err
+}
+
+// containsCredentials checks if git command contains credentials or sensitive auth info
+func (p *GitPlugin) containsCredentials(cmd string) bool {
+	cmdLower := strings.ToLower(cmd)
+	
+	// Check for git commands with embedded credentials
+	suspiciousPatterns := []string{
+		"://.*:.*@",           // URLs with credentials
+		"token=",              // Token parameters
+		"password=",           // Password parameters
+		"ssh-key",             // SSH key references
+		"id_rsa",              // SSH key file
+		"id_ed25519",          // SSH key file
+		"config --global credential", // Credential configuration
+		"clone.*@.*:",         // Clone with potential credentials
+	}
+	
+	for _, pattern := range suspiciousPatterns {
+		if matched, _ := regexp.MatchString(pattern, cmdLower); matched {
+			return true
+		}
+	}
+	
+	return false
+}
+
 // checkForTypos checks for common typos in git commands
 func (p *GitPlugin) checkForTypos(cmd string) (string, string) {
 	corrections := map[string]string{

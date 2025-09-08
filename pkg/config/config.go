@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/ayushsharma-1/LogAid/pkg/plugin"
 )
 
 // Config holds the application configuration
@@ -61,6 +63,15 @@ type Config struct {
 	SandboxMode     bool
 	WhitelistCommands bool
 	BlacklistCommands []string
+	
+	// Security Sanitization
+	EnableSecuritySanitization bool
+	AutoSanitizeForAI         bool
+	RequireConsentForAI       bool
+	RequireConsentForSensitive bool
+	MaxRiskLevelForAI         string
+	BlockHighRiskCommands     bool
+	LogSecurityEvents         bool
 	
 	// Performance Settings
 	PTYBufferSize   int
@@ -144,6 +155,15 @@ func Load() (*Config, error) {
 		SandboxMode:             getEnvBoolOrDefault("SANDBOX_MODE", false),
 		WhitelistCommands:       getEnvBoolOrDefault("WHITELIST_COMMANDS", false),
 		BlacklistCommands:       getEnvSliceOrDefault("BLACKLIST_COMMANDS", []string{"rm -rf /", "dd if="}),
+		
+		// Security Sanitization
+		EnableSecuritySanitization: getEnvBoolOrDefault("ENABLE_SECURITY_SANITIZATION", true),
+		AutoSanitizeForAI:         getEnvBoolOrDefault("AUTO_SANITIZE_FOR_AI", true),
+		RequireConsentForAI:       getEnvBoolOrDefault("REQUIRE_CONSENT_FOR_AI", true),
+		RequireConsentForSensitive: getEnvBoolOrDefault("REQUIRE_CONSENT_FOR_SENSITIVE", true),
+		MaxRiskLevelForAI:         getEnvOrDefault("MAX_RISK_LEVEL_FOR_AI", "Medium"),
+		BlockHighRiskCommands:     getEnvBoolOrDefault("BLOCK_HIGH_RISK_COMMANDS", true),
+		LogSecurityEvents:         getEnvBoolOrDefault("LOG_SECURITY_EVENTS", true),
 		
 		// Performance Settings
 		PTYBufferSize:     getEnvIntOrDefault("PTY_BUFFER_SIZE", 8192),
