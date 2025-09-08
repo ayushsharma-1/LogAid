@@ -58,3 +58,4 @@ history.json
 
 # Ignore environment files that may contain sensitive information
 .env
+.env.local
